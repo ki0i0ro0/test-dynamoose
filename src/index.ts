@@ -1,13 +1,15 @@
-const express = require('express')
-const bodyParser = require('body-parser')
-const dynamoose = require('dynamoose')
-const _ = require('lodash')
+import express from 'express'
+import bodyParser from 'body-parser'
+import dynamoose from 'dynamoose'
+
+// DyanmoDB設定
 dynamoose.aws.sdk.config.update({
   accessKeyId: 'AKID',
   secretAccessKey: 'SECRET',
   region: 'us-east-1',
 })
 dynamoose.aws.ddb.local()
+
 const Todo = dynamoose.model(
   'Todo',
   {
@@ -28,56 +30,55 @@ const Todo = dynamoose.model(
   },
 )
 
-const router = express()
+const app: express.Express = express()
 const port = 3000
-// urlencodedとjsonは別々に初期化する
-router.use(
+
+// JSON使用設定
+app.use(
   bodyParser.urlencoded({
     extended: true,
   }),
 )
-router.use(bodyParser.json())
+app.use(bodyParser.json())
 
-router.get('/', (req, res, next) => {
-  const userId = 'aaa'
-  let lastKey = req.query.lastKey
+app.get('/', (req, res, next) => {
+  const userId = 'a'
 
   return Todo.query('userId')
     .eq(userId)
     .exec((err, result) => {
-      if (err) return next(err, req, res, next)
+      if (err) return next(err)
 
       res.status(200).json(result)
     })
 })
 
-router.get('/:createdAt', (req, res, next) => {
+app.get('/:createdAt', (req, res, next) => {
   const userId = res.locals.userId
   const createdAt = String(req.params.createdAt)
 
   return Todo.get({ userId, createdAt }, function (err, result) {
-    if (err) return next(err, req, res, next)
+    if (err) return next(err)
 
     res.status(200).json(result)
   })
 })
 
-router.post('/', (req, res, next) => {
+app.post('/', (req, res, next) => {
   const body = req.body
-  console.log(req.body)
   body.createdAt = new Date().toISOString()
   body.updatedAt = new Date().toISOString()
-  body.userId = body.userId
+  body.userId = body ? body.userId : 'a'
   res.locals.userId = body.userId
   req.query.lastKey = body.createdAt
-  return new Todo(body).save((err, result) => {
-    if (err) return next(err, req, res, next)
 
+  return new Todo(body).save((err, result) => {
+    if (err) return next(err)
     res.status(201).json(result)
   })
 })
 
-// router.put('/:createdAt', (req, res, next) => {
+// app.put('/:createdAt', (req, res, next) => {
 //   const userId = res.locals.userId
 //   const createdAt = req.params.createdAt
 //   const body = req.body
@@ -92,31 +93,30 @@ router.post('/', (req, res, next) => {
 //       createdAt,
 //     }),
 //   ).save((err, result) => {
-//     if (err) return next(err, req, res, next)
+//     if (err) return next(err)
 
 //     res.status(200).json(result)
 //   })
 // })
 
-// router.delete('/:createdAt', (req, res, next) => {
-//   const createdAt = req.params.createdAt
-//   const userId = res.locals.userId
+app.delete('/:createdAt', (req, res, next) => {
+  const createdAt = req.params.createdAt
+  const userId = res.locals.userId
 
-//   if (!createdAt) return res.status(400).send('Bad request. createdAt is undefined')
+  if (!createdAt) return res.status(400).send('Bad request. createdAt is undefined')
 
-//   return Todo.delete(
-//     {
-//       userId,
-//       createdAt,
-//     },
-//     (err) => {
-//       if (err) return next(err, req, res, next)
+  return Todo.delete(
+    {
+      userId,
+      createdAt,
+    },
+    (err) => {
+      if (err) return next(err)
+      res.status(204).json()
+    },
+  )
+})
 
-//       res.status(204).json()
-//     },
-//   )
-// })
-
-router.listen(port, () => {
+app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
