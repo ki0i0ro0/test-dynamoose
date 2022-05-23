@@ -1,0 +1,12 @@
+{
+  "name": "test-dynamoose",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dynamoose": "^2.8.5"
+  }
+}
